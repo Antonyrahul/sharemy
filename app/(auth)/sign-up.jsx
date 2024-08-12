@@ -5,6 +5,7 @@ import { View, Text, ScrollView, Dimensions, Alert, Image } from "react-native";
 
 import { images } from "../../constants";
 import { createUser } from "../../lib/appwrite";
+import { signup } from "../../lib/shareMyMindServer";
 import { CustomButton, FormField } from "../../components";
 import { useGlobalContext } from "../../context/GlobalProvider";
 
@@ -25,11 +26,15 @@ const SignUp = () => {
 
     setSubmitting(true);
     try {
-      const result = await createUser(form.email, form.password, form.username);
-      setUser(result);
-      setIsLogged(true);
+      const result = await signup(form.email, form.password);
+      console.log(result)
+      if (result.message == "saved") {
+        // setUser(result);
+        // setIsLogged(true);
+        router.replace("/sign-in")
+      }
 
-      router.replace("/home");
+      //router.replace("/home");
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
@@ -53,7 +58,7 @@ const SignUp = () => {
           />
 
           <Text className="text-2xl font-semibold text-white mt-10 font-psemibold">
-            Sign Up to Aora
+            Sign Up to Sahremymind
           </Text>
 
           <FormField

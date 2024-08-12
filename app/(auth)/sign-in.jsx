@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Link, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, ScrollView, Dimensions, Alert, Image } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 import { images } from "../../constants";
 import { CustomButton, FormField } from "../../components";
 import { getCurrentUser, signIn } from "../../lib/appwrite";
 import { useGlobalContext } from "../../context/GlobalProvider";
+import { signin } from "../../lib/shareMyMindServer";
 
 const SignIn = () => {
   const { setUser, setIsLogged } = useGlobalContext();
@@ -24,10 +27,17 @@ const SignIn = () => {
     setSubmitting(true);
 
     try {
-      await signIn(form.email, form.password);
-      const result = await getCurrentUser();
-      setUser(result);
-      setIsLogged(true);
+      //await signIn(form.email, form.password);
+      const response = await signin(form.email, form.password)
+      //const result = await getCurrentUser();
+      //setUser(result);
+      // setIsLogged(true);
+      console.log(response)
+      if (response.status == 200) {
+        setUser(response)
+        setIsLogged(true)
+        await AsyncStorage.setItem("email", response.email)
+      }
 
       Alert.alert("Success", "User signed in successfully");
       router.replace("/home");
@@ -54,7 +64,7 @@ const SignIn = () => {
           />
 
           <Text className="text-2xl font-semibold text-white mt-10 font-psemibold">
-            Log in to Aora
+            Log in to Sharemymind
           </Text>
 
           <FormField

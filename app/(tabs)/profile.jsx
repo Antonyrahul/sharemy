@@ -3,17 +3,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Image, FlatList, TouchableOpacity } from "react-native";
 
 import { icons } from "../../constants";
-import useAppwrite from "../../lib/useAppwrite";
+// import useAppwrite from "../../lib/useAppwrite";
 import { getUserPosts, signOut } from "../../lib/appwrite";
 import { useGlobalContext } from "../../context/GlobalProvider";
 import { EmptyState, InfoBox, VideoCard } from "../../components";
 
 const Profile = () => {
   const { user, setUser, setIsLogged } = useGlobalContext();
-  const { data: posts } = useAppwrite(() => getUserPosts(user.$id));
+  // const { data: posts } = useAppwrite(() => getUserPosts(user.$id));
 
   const logout = async () => {
-    await signOut();
+    //await signOut();
     setUser(null);
     setIsLogged(false);
 
@@ -23,7 +23,7 @@ const Profile = () => {
   return (
     <SafeAreaView className="bg-primary h-full">
       <FlatList
-        data={posts}
+      
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
           <VideoCard
@@ -69,7 +69,7 @@ const Profile = () => {
 
             <View className="mt-5 flex flex-row">
               <InfoBox
-                title={posts.length || 0}
+                title={5|| 0}
                 subtitle="Posts"
                 titleStyles="text-xl"
                 containerStyles="mr-10"

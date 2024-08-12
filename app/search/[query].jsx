@@ -3,22 +3,22 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import useAppwrite from "../../lib/useAppwrite";
+
 import { searchPosts } from "../../lib/appwrite";
 import { EmptyState, SearchInput, VideoCard } from "../../components";
 
 const Search = () => {
   const { query } = useLocalSearchParams();
-  const { data: posts, refetch } = useAppwrite(() => searchPosts(query));
+  // const { data: posts, refetch } = useAppwrite(() => searchPosts(query));
 
   useEffect(() => {
-    refetch();
+   
   }, [query]);
 
   return (
     <SafeAreaView className="bg-primary h-full">
       <FlatList
-        data={posts}
+        
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
           <VideoCard

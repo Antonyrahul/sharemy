@@ -1,23 +1,121 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FlatList, Image, RefreshControl, Text, View } from "react-native";
+import { FlatList, Image, RefreshControl, Text, View, Alert, StyleSheet, StatusBar, TextInput, TouchableOpacity } from "react-native";
+import { CustomButton, FormField } from "../../components";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+
+//import Clipboard from '@react-native-clipboard/clipboard';
+
 
 import { images } from "../../constants";
-import useAppwrite from "../../lib/useAppwrite";
+
 import { getAllPosts, getLatestPosts } from "../../lib/appwrite";
 import { EmptyState, SearchInput, Trending, VideoCard } from "../../components";
+import { addUrlForUser, getNotesForUser } from "../../lib/shareMyMindServer";
 
 const Home = () => {
-  const { data: posts, refetch } = useAppwrite(getAllPosts);
-  const { data: latestPosts } = useAppwrite(getLatestPosts);
+
+
+
+  useEffect(() => {
+
+    getNotes();
+  }, []);
+
+  async function getNotes() {
+    console.log("in getnotes")
+    const email = await AsyncStorage.getItem("email")
+
+    const response = await getNotesForUser(email)
+    console.log(response)
+    setNotes(response.data[0].notes)
+    setDisplayUrls(notes)
+  }
+  // const { data: posts, refetch } = useAppwrite(getAllPosts);
+  // const { data: latestPosts } = useAppwrite(getLatestPosts);
+  const [notes, setNotes] = useState()
+  const [displayUrls, setDisplayUrls] = useState(notes)
 
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState("");
+  const [isSubmitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    url: "",
+    password: "",
+  });
+  const [url, setUrl] = useState('')
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+
     setRefreshing(false);
   };
+  const searchQuery = async (e) => {
+    setQuery(e)
+    console.log(e)
+    if (e.length > 2) {
+      const res = notes.filter((item) => {
+
+        return item.url.includes(e)
+      })
+      console.log(res, res.length)
+      if (res.length > 0) {
+        setDisplayUrls(res)
+      }
+    }
+    else {
+      setDisplayUrls(notes)
+    }
+  }
+
+  const submit = async () => {
+    // if (form.email === "" || form.password === "") {
+    //   Alert.alert("Error", "Please fill in all fields");
+    // }
+
+    setSubmitting(true);
+
+    try {
+      const email = await AsyncStorage.getItem("email")
+      //await signIn(form.email, form.password);
+      const response = await addUrlForUser(email, url)
+      //const result = await getCurrentUser();
+      //setUser(result);
+      // setIsLogged(true);
+      console.log(response)
+      setUrl('')
+      //  if (response.status==200)
+      //  {
+      //   setUser(response)
+      //   setIsLogged(true)
+      //  }
+
+      Alert.alert("Success", "Url added successfully");
+      getNotes();
+      // router.replace("/home");
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setSubmitting(false);
+
+    }
+  };
+
+  const Item = ({ title }) => (
+    <View className="mr-5 w-62 rounded-[33px] mt-3 bg-white/10" >
+      <Text style={styles.title}>{title}</Text>
+    </View>
+  );
+  const ItemUrl = ({ content, title, description, imageurl }) => (
+    <View className="mr-5 w-62 rounded-[33px] mt-3 bg-white/10" >
+      <Text style={styles.title}>{content}</Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title}>{description}</Text>
+      <Image style={styles.logo} source={{ uri: imageurl }}></Image>
+    </View>
+
+  )
 
   // one flatlist
   // with list header
@@ -28,7 +126,7 @@ const Home = () => {
   return (
     <SafeAreaView className="bg-primary">
       <FlatList
-        data={posts}
+        keyboardShouldPersistTaps="always"
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
           <VideoCard
@@ -39,7 +137,7 @@ const Home = () => {
             avatar={item.creator.avatar}
           />
         )}
-        ListHeaderComponent={() => (
+        ListHeaderComponent={
           <View className="flex my-6 px-4 space-y-6">
             <View className="flex justify-between items-start flex-row mb-6">
               <View>
@@ -47,7 +145,7 @@ const Home = () => {
                   Welcome Back
                 </Text>
                 <Text className="text-2xl font-psemibold text-white">
-                  JSMastery
+                  Sharemymind
                 </Text>
               </View>
 
@@ -60,21 +158,76 @@ const Home = () => {
               </View>
             </View>
 
-            <SearchInput />
+            <View className="flex flex-row items-center space-x-4 w-full h-16 px-4 bg-black-100 rounded-2xl border-2 border-black-200 focus:border-secondary">
+              <TextInput
+                className="text-base mt-0.5 text-white flex-1 font-pregular"
+                value={query}
+                placeholder="Search a content"
+                placeholderTextColor="#CDCDE0"
+                onChangeText={(e) => searchQuery(e)}
+              />
+
+              <TouchableOpacity
+                onPress={() => {
+                  if (query === "")
+                    return Alert.alert(
+                      "Missing Query",
+                      "Please input something to search results across database"
+                    );
+
+                  if (pathname.startsWith("/search")) router.setParams({ query });
+                  else router.push(`/search/${query}`);
+                }}
+              >
+
+              </TouchableOpacity>
+            </View>
+            <View>
+              <FormField
+                title="Enter Notes"
+                value={url}
+                placeholder="Enter notes"
+                handleChangeText={(e) => setUrl(e)}
+                otherStyles="mt-7"
+                keyboardType="email-address"
+              />
+              <CustomButton
+                title="save"
+                handlePress={submit}
+                containerStyles="mt-7"
+                isLoading={isSubmitting}
+              />
+
+            </View>
+
 
             <View className="w-full flex-1 pt-5 pb-8">
-              <Text className="text-lg font-pregular text-gray-100 mb-3">
-                Latest Videos
-              </Text>
 
-              <Trending posts={latestPosts ?? []} />
+
+
+              <FlatList
+                data={displayUrls}
+                vertical
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  if (item.title) {
+                    return <ItemUrl content={item.url} title={item.title} description={item.description} imageurl={item.imgUrl} />
+                  }
+                  else {
+                    return <Item title={item.url} />
+                  }
+
+                }}
+
+              />
+
             </View>
           </View>
-        )}
+        }
         ListEmptyComponent={() => (
           <EmptyState
-            title="No Videos Found"
-            subtitle="No videos created yet"
+            title="No Notes Found"
+            subtitle="No Notes created yet"
           />
         )}
         refreshControl={
@@ -84,5 +237,25 @@ const Home = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginTop: StatusBar.currentHeight || 0,
+  },
+  item: {
+    backgroundColor: '#f9c2ff',
+    padding: 20,
+    marginVertical: 8,
+    marginHorizontal: 16,
+  },
+  title: {
+    fontSize: 32,
+  },
+  logo: {
+    width: 66,
+    height: 58,
+  },
+});
 
 export default Home;
