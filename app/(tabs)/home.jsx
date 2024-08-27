@@ -4,6 +4,8 @@ import { FlatList, Image, RefreshControl, Text, View, Alert, StyleSheet, StatusB
 import { CustomButton, FormField } from "../../components";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
+
 
 //import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -13,17 +15,57 @@ import { images } from "../../constants";
 import { getAllPosts, getLatestPosts } from "../../lib/appwrite";
 import { EmptyState, SearchInput, Trending, VideoCard } from "../../components";
 import { addUrlForUser, getNotesForUser } from "../../lib/shareMyMindServer";
+import { useShareIntent, ShareIntentFile } from "expo-share-intent";
 
 const Home = () => {
+  var isFocused = false
+  isFocused = useIsFocused();
+  console.log("isfocused", isFocused)
+  const dummy = 1
+  const { hasShareIntent, shareIntent, resetShareIntent, error } =
+    useShareIntent({
+      debug: false,
+      resetOnBackground: true,
+    });
 
+  //console.log(url)
+  //const dummy = true
+  console.log("hasshareintent", hasShareIntent)
+  console.log("shareIntent", shareIntent)
+  const [url, setUrl] = useState(() => dummy > 0 ? getintentvars(hasShareIntent, shareIntent) : "initial url");
+  console.log("url", url)
+  if (hasShareIntent) {
+    console.log("the url is ", shareIntent.webUrl)
+    // setUrl(shareIntent.webUrl)
 
+  }
+
+  function getintentvars(intentBool, intenVal) {
+    console.log("in the get function", intentBool)
+    return intenVal.webUrl
+  }
 
   useEffect(() => {
+    console.log("in useeffect")
 
     getNotes();
-  }, []);
+    if (hasShareIntent) {
+      console.log("has share intent in use effect")
+      setUrl(shareIntent.meta.webUrl)
+    }
+
+  }, [isFocused]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log("Its focused bro")
+      if (hasShareIntent)
+        setUrl(shareIntent.meta.webUrl)
+    }, [])
+  )
+
 
   async function getNotes() {
+
     console.log("in getnotes")
     const email = await AsyncStorage.getItem("email")
 
@@ -44,7 +86,7 @@ const Home = () => {
     url: "",
     password: "",
   });
-  const [url, setUrl] = useState('')
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -186,6 +228,7 @@ const Home = () => {
               <FormField
                 title="Enter Notes"
                 value={url}
+                id="notes"
                 placeholder="Enter notes"
                 handleChangeText={(e) => setUrl(e)}
                 otherStyles="mt-7"
